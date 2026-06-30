@@ -1,0 +1,15 @@
+apiVersion: machineconfiguration.openshift.io/v1
+kind: MachineConfigPool
+metadata:
+  name: nvidia-worker # The name of your custom pool
+spec:
+  machineConfigSelector:
+    matchExpressions:
+      - key: machineconfiguration.openshift.io/role
+        operator: In
+        values:
+          - worker          # Inherit standard worker configs
+          - nvidia-worker  # Inherit your new custom configs
+  nodeSelector:
+    matchLabels:
+      node-role.kubernetes.io/nvidia-worker: ""

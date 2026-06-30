@@ -1,0 +1,36 @@
+# Step 3 of 4 (infrastructure) — apply after sriov-network-pool-config.yaml.
+#
+# This is the same SriovNetworkNodePolicy as in single-node-bypass-ovn-cx7/,
+# with one change: numVfs is kept at 2 (VF0 for the client pod, VF1 for the
+# server pod).  No management VF reservation is needed for the basic hardware
+# offload test.
+#
+# What this policy does:
+#   - Selects the CX7 NIC (vendor 15b3, device 1021 = ConnectX-7) on any node
+#     that has the Mellanox PCI device present.
+#   - Creates 2 VFs on enp55s0np0.
+#   - Puts the NIC in switchdev (eSwitch) mode — required for hardware offload.
+#   - Registers a Kubernetes extended resource "openshift.io/mlnx_cx7_vf" that
+#     pods can request to get a VF allocated to them.
+#
+# Apply with:
+#   oc apply -f 99-sriov-network-node-policy-connect-x7.yaml
+apiVersion: sriovnetwork.openshift.io/v1
+kind: SriovNetworkNodePolicy
+metadata:
+  name: cx7-switchdev-policy
+  namespace: openshift-sriov-network-operator
+spec:
+  nodeSelector:
+    feature.node.kubernetes.io/pci-15b3.present: "true"
+  nicSelector:
+    vendor: "15b3"
+    deviceID: "1021"
+    pfNames:
+      - enp55s0np0
+  resourceName: mlnx_cx7_vf
+  numVfs: 2
+  eSwitchMode: switchdev
+  deviceType: netdevice
+  isRdma: false
+  priority: 99

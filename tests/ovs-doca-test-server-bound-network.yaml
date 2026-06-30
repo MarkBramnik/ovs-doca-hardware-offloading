@@ -1,0 +1,69 @@
+# Updated server pod for Path B (OVN-aware hardware offload).
+#
+# Key changes from tests/server/ovs-doca-test-server-bound.yaml:
+#
+#   BEFORE (bypass):
+#     annotations:
+#       k8s.v1.cni.cncf.io/networks: cx7-ovs-network   # adds net1 (VF), eth0 stays a veth
+#
+#   AFTER (OVN hw offload):
+#     annotations:
+#       v1.multus-cni.io/default-network: default/cx7-ovn-hw-offload  # VF becomes eth0
+#
+# The resource limit (openshift.io/mlnx_cx7_vf: "1") is unchanged — the pod
+# still requests a CX7 VF, but now Multus+OVN-K use it as the primary interface
+# instead of a secondary net1.
+#
+# The server's IP is now assigned by OVN-K from the cluster subnet (10.128.x.x),
+# not from the host-local 192.168.200.x range.  The Service ClusterIP and DNS
+# name (ovs-doca-test-server-service) continue to work as before.
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ovs-doca-test-server
+  labels:
+    app: ovs-doca-test-server
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ovs-doca-test-server
+  template:
+    metadata:
+      annotations:
+        v1.multus-cni.io/default-network: default/cx7-ovn-hw-offload
+      labels:
+        app: ovs-doca-test-server
+    spec:
+      nodeSelector:
+        node-role.kubernetes.io/test-server: ""
+      containers:
+      - name: python-server
+        image: quay.io/rh-ee-mbramnik/ecosys-nvidia/ovs-doca-test-app-server:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8000
+          name: http
+        resources:
+          limits:
+            openshift.io/mlnx_cx7_vf: "1"
+        env:
+        - name: PORT
+          value: "8000"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ovs-doca-test-server-service
+  labels:
+    app: ovs-doca-test-server
+spec:
+  type: ClusterIP
+  selector:
+    app: ovs-doca-test-server
+  ports:
+  - name: http
+    protocol: TCP
+    port: 8000
+    targetPort: 8000

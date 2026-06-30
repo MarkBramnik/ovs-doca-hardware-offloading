@@ -1,0 +1,40 @@
+# Step 2 of 4 (infrastructure) — apply after sriov-operator-config.yaml.
+#
+# Tells the SR-IOV Network Operator which MachineConfigPool contains the nodes
+# that should have OVS hardware offloading enabled.  The operator will:
+#   1. Set hw-offload=true in OVS on every node in the pool.
+#   2. Configure OVN-Kubernetes to use VF representors (instead of veth pairs)
+#      as pod primary interfaces when the pod requests a VF resource and uses
+#      the ovn-k8s-cni-overlay NetworkAttachmentDefinition.
+#
+# The pool name "nvidia-worker" matches the MachineConfigPool in
+# doca-ovs-image-support-mcp.yaml, which already targets
+# nvd-srv-30 via the node-role.kubernetes.io/nvidia-worker label.
+#
+# WARNING: applying this will drain and restart all nodes in the pool.
+# On a single-node test cluster this means nvd-srv-30 will reboot once more.
+#
+# Applying this resource among other things will generate 00-nvidia-worker-ovs-hw-offload by SRIOV Network Operator
+# It injects a systemd drop-in for ovs-vswitchd.service:
+# [Service]
+# ExecStartPre=/bin/ovs-vsctl --no-wait set Open_vSwitch . other_config:hw-offload=true
+#
+# This runs before ovs-vswitchd starts on every boot, writing hw-offload=true into the OVS config database.
+# doca-init=true is NOT set by any MachineConfig or cluster resource. 
+# It is set automatically by the DOCA-OVS binary itself at startup — the version of ovs-vswitchd that ships in a 
+# custom CoreOS image (100-doca-ovs-image-layer). 
+# When the DOCA-patched ovs-vswitchd detects hw-offload=true in other_config and finds a DOCA-capable device 
+# (ConnectX-7 with the DOCA driver), it initializes the DOCA datapath and writes doca-init=true back into other_config 
+# as a signal that DOCA was successfully initialized.
+#
+#
+# Apply with:
+#   oc apply -f sriov-network-pool-config.yaml
+apiVersion: sriovnetwork.openshift.io/v1
+kind: SriovNetworkPoolConfig
+metadata:
+  name: cx7-hw-offload-pool
+  namespace: openshift-sriov-network-operator
+spec:
+  ovsHardwareOffloadConfig:
+    name: nvidia-worker   # must match the MachineConfigPool name

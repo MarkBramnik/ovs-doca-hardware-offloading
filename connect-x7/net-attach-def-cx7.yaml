@@ -1,0 +1,35 @@
+# Step 4 of 4 (infrastructure) — apply after the SR-IOV policy is ready.
+#
+# Here we use type "ovn-k8s-cni-overlay" which:
+#   - Is OVN-Kubernetes's own CNI plugin
+#   - When it sees that a VF has been allocated to the pod (via the resource
+#     annotation below), it moves the VF into the pod netns as eth0 (not net1)
+#   - It places the VF representor in br-int WITH external_ids:iface-id set to
+#     the pod's OVN logical switch port name
+#   - ovn-controller then binds the logical port to the representor and programs
+#     OpenFlow rules automatically
+#   - DOCA hardware-offloads those OVN-programmed flows to the CX7 NIC
+#
+# Pod annotation to use this as primary eth0 (not net1):
+#   v1.multus-cni.io/default-network: default/cx7-ovn-hw-offload
+#
+# Apply with:
+#   oc apply -f net-attach-def-cx7.yaml
+apiVersion: k8s.cni.cncf.io/v1
+kind: NetworkAttachmentDefinition
+metadata:
+  name: cx7-ovn-hw-offload
+  namespace: default
+  annotations:
+    # Tells Multus which extended resource to expect on the pod.
+    # Must match "openshift.io/<resourceName>" from SriovNetworkNodePolicy.
+    k8s.v1.cni.cncf.io/resourceName: openshift.io/mlnx_cx7_vf
+spec:
+  config: >
+    {
+      "cniVersion": "0.3.1",
+      "name": "ovn-kubernetes",
+      "type": "ovn-k8s-cni-overlay",
+      "ipam": {},
+      "dns": {}
+    }

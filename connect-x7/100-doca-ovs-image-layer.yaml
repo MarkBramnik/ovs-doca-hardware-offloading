@@ -1,0 +1,8 @@
+apiVersion: machineconfiguration.openshift.io/v1
+kind: MachineConfig
+metadata:
+  labels:
+    machineconfiguration.openshift.io/role: nvidia-worker # probably this label is set by some operator? I don't see it
+  name: 100-doca-ovs-image-layer
+spec:
+  osImageURL: quay.io/rh-ee-mbramnik/ecosys-nvidia/custom-coreos-image-doca-3-2-2-os-4-21-15@sha256:df916cb29fa47360d41fd0cd5e57b67a03df2ff7264efadf39d97a3dfc2cc611

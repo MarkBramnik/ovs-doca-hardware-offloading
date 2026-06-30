@@ -1,0 +1,24 @@
+# Step 1 of 4 (infrastructure) — apply first, before everything else.
+#
+# Switches the SR-IOV Network Operator from its default "daemon" mode to
+# "systemd" mode. In daemon mode the operator configures nodes via a privileged
+# pod that runs on each node. In systemd mode it instead writes systemd unit
+# files and lets the host run them at boot — which is the prerequisite for OVS
+# hardware offloading.
+#
+# WARNING: applying this will cause the SR-IOV operator to drain and restart
+# every node in the cluster (one at a time) to install the new systemd units.
+# On a single-node test cluster this means nvd-srv-30 will reboot once.
+#
+# Apply with:
+#   oc apply -f sriov-operator-config.yaml
+apiVersion: sriovnetwork.openshift.io/v1
+kind: SriovOperatorConfig
+metadata:
+  name: default
+  namespace: openshift-sriov-network-operator
+spec:
+  enableInjector: true
+  enableOperatorWebhook: true
+  configurationMode: "systemd"
+  logLevel: 2
