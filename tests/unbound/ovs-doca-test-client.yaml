@@ -1,0 +1,32 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: ovs-doca-test-client
+  labels:
+    app: ovs-doca-test-client
+spec:
+  # Automatically clean up the job resource 10 minutes after it finishes
+  ttlSecondsAfterFinished: 600
+  # Number of retries before marking the job as failed
+  backoffLimit: 2
+  template:
+    metadata:
+      labels:
+        app: ovs-doca-test-client
+    spec:
+      nodeSelector:
+        node-role.kubernetes.io/test-client: ""
+      restartPolicy: "Never"
+      containers:
+      - name: python-client
+        image: quay.io/rh-ee-mbramnik/ecosys-nvidia/ovs-doca-test-app-client:latest
+        imagePullPolicy: Always
+        env:
+        - name: SERVER_HOST
+          value: "ovs-doca-test-server-service"
+        - name: SERVER_PORT
+          value: "8000"
+        - name: CALLS # make 300 calls
+          value: "300"
+        - name: CALL_FREQUENCY_SECONDS # wait 1 seconds between calls
+          value: "1"
