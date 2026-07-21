@@ -1,0 +1,15 @@
+apiVersion: k8s.cni.cncf.io/v1
+kind: NetworkAttachmentDefinition
+metadata:
+  name: rail7-ovn-hw-offload
+  namespace: default
+  annotations:
+    k8s.v1.cni.cncf.io/resourceName: openshift.io/eth_rail7
+spec:
+  config: '{
+    "cniVersion": "0.4.0",
+    "name": "rail7-ovn-hw-offload",
+    "type": "ovn-k8s-cni-overlay",
+    "logFile": "/var/log/ovn-kubernetes/ovn-k8s-cni-overlay.log",
+    "logLevel": "5"
+  }'

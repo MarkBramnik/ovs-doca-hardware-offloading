@@ -1,0 +1,20 @@
+apiVersion: sriovnetwork.openshift.io/v1
+kind: SriovNetworkNodePolicy
+metadata:
+  name: eth-rail6
+  namespace: openshift-sriov-network-operator
+spec:
+  bridge:
+    ovs: {}
+  deviceType: netdevice
+  eSwitchMode: switchdev
+  isRdma: true
+  linkType: ETH
+  nicSelector:
+    pfNames:
+      - eth_rail6
+  nodeSelector:
+    node-role.kubernetes.io/worker: ""
+  numVfs: 1
+  priority: 99
+  resourceName: eth_rail6

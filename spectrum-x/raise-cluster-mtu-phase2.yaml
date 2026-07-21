@@ -1,0 +1,16 @@
+# phase2-raise-cluster-mtu.yaml
+# Apply only after all nodes finish Phase 1 reboots.
+# This tells OVN-K to use 9162 as the pod network MTU.
+# MCO will drain and reboot nodes again.
+apiVersion: operator.openshift.io/v1
+kind: Network
+metadata:
+  name: cluster
+spec:
+  migration:
+    mtu:
+      network:
+        from: 1400
+        to: 9162    # 9216 (physical) - 54 (Geneve overhead) = 9162
+      machine:
+        to: 9216

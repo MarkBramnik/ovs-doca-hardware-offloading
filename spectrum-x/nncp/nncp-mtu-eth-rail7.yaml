@@ -1,0 +1,14 @@
+apiVersion: nmstate.io/v1
+kind: NodeNetworkConfigurationPolicy
+metadata:
+  name: nncp-mtu-eth-rail7
+spec:
+  nodeSelector:
+    node-role.kubernetes.io/worker: ''
+  desiredState:
+    interfaces:
+    - name: eth_rail7
+      description: mtu 9216 eth_rail7
+      type: ethernet 
+      state: up 
+      mtu: 9216

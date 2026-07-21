@@ -1,0 +1,37 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: ovs-doca-test-client
+  labels:
+    app: ovs-doca-test-client
+spec:
+  ttlSecondsAfterFinished: 600
+  backoffLimit: 2
+  template:
+    metadata:
+      labels:
+        app: ovs-doca-test-client
+      annotations:
+        v1.multus-cni.io/default-network: default/rail1-ovn-hw-offload  # replaces eth0 with rail 1 VF
+    spec:
+      nodeSelector:
+        node-role.kubernetes.io/diff-node: ""
+      restartPolicy: "Never"
+      containers:
+      - name: python-client
+        image: quay.io/rh-ee-mbramnik/ecosys-nvidia/ovs-doca-test-app-client:latest
+        imagePullPolicy: Always
+        env:
+        - name: SERVER_HOST
+          value: "ovs-doca-test-server-service"
+        - name: SERVER_PORT
+          value: "8000"
+        - name: CALLS
+          value: "300"
+        - name: CALL_FREQUENCY_SECONDS
+          value: "1"
+        resources:
+          requests:
+            openshift.io/eth_rail1: "1" # tells the SR-IOV device plugin to allocate a VF from rail 1 and inject its PCI address into the container environment so ovn-k8s-cni-overlay can find it
+          limits:
+            openshift.io/eth_rail1: "1"

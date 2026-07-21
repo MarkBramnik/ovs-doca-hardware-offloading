@@ -1,0 +1,55 @@
+# Configures the SR-IOV Network Operator's global behavior for this cluster.
+#
+# What happens when applied:
+#
+#   1. The operator reads configDaemonNodeSelector and schedules its
+#      sriov-network-config-daemon pod only on nodes that match ALL three labels:
+#        - feature.node.kubernetes.io/pci-15b3.sriov.capable: "true"
+#          (set by NFD — confirms a Mellanox SR-IOV capable NIC is present)
+#        - network.nvidia.com/operator.mofed.wait: "false"
+#          (set by NVIDIA Network Operator — confirms MOFED drivers are ready)
+#        - node-role.kubernetes.io/worker: ""
+#          (standard worker node role — excludes control-plane nodes)
+#
+#   2. configurationMode: "daemon" means the config daemon runs as a privileged
+#      pod (not as a systemd service). It wakes up after kubelet is running,
+#      finds all SriovNetworkNodePolicy resources, reads the desired NIC state,
+#      and applies it (switchdev mode, VF count, firmware params) while the
+#      node is live. If a reboot is needed (e.g. first-time switchdev setup),
+#      it cordons the node, triggers ONE reboot, and uncordons after.
+#      There is no early-boot timing race with this mode.
+#
+#   3. featureGates.manageSoftwareBridges: true instructs the daemon to also
+#      manage OVS bridges. For every PF that has VFs configured by a policy,
+#      the daemon creates a dedicated OVS bridge (br-0000_18_00.0, etc.) and
+#      attaches the PF as its uplink port. It also places each VF representor
+#      into that bridge so OVS-DOCA can use it for hardware offloaded flows.
+#
+#   4. enableInjector: true runs the network-resources-injector webhook, which
+#      automatically injects the SR-IOV resource request and the correct
+#      NetworkAttachmentDefinition annotation into pods that request VFs.
+#
+#   5. enableOperatorWebhook: true runs the operator's admission webhook, which
+#      validates SriovNetworkNodePolicy objects before they are persisted,
+#      catching configuration errors early.
+#
+#   6. logLevel: 2 sets the daemon verbosity to INFO level (0=panic, 1=error,
+#      2=info, 3=debug). Sufficient for normal operation; raise to 3 when
+#      diagnosing switchdev or VF configuration failures.
+#
+apiVersion: sriovnetwork.openshift.io/v1
+kind: SriovOperatorConfig
+metadata:
+  name: default
+  namespace: openshift-sriov-network-operator
+spec:
+  configDaemonNodeSelector:
+    feature.node.kubernetes.io/pci-15b3.sriov.capable: "true"
+    network.nvidia.com/operator.mofed.wait: "false"
+    node-role.kubernetes.io/worker: ""
+  enableInjector: true
+  enableOperatorWebhook: true
+  configurationMode: "daemon"
+  featureGates:
+    manageSoftwareBridges: true
+  logLevel: 2

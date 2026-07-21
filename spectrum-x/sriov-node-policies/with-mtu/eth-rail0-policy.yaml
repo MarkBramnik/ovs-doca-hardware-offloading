@@ -1,0 +1,21 @@
+apiVersion: sriovnetwork.openshift.io/v1
+kind: SriovNetworkNodePolicy
+metadata:
+  name: eth-rail0
+  namespace: openshift-sriov-network-operator
+spec:
+  bridge:
+    ovs: {}
+  deviceType: netdevice
+  eSwitchMode: switchdev
+  isRdma: true
+  linkType: ETH
+  mtu: 9216                   # PF MTU — kept at 9216 per Spectrum-X recommendation
+  nicSelector:
+    pfNames:
+      - eth_rail0
+  nodeSelector:
+    node-role.kubernetes.io/worker: ""
+  numVfs: 1
+  priority: 99
+  resourceName: eth_rail0

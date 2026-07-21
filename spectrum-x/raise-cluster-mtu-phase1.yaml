@@ -1,0 +1,13 @@
+# phase1-raise-machine-mtu.yaml
+# Apply AFTER the switch is configured for jumbo frames.
+# This generates a MachineConfig that sets eth_sec2/br-ex MTU to 9216 on all nodes.
+# MCO will drain and reboot each node sequentially.
+apiVersion: operator.openshift.io/v1
+kind: Network
+metadata:
+  name: cluster
+spec:
+  migration:
+    mtu:
+      machine:
+        to: 9216    # Must match what the physical switch supports

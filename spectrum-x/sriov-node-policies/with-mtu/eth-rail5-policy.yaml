@@ -1,0 +1,21 @@
+apiVersion: sriovnetwork.openshift.io/v1
+kind: SriovNetworkNodePolicy
+metadata:
+  name: eth-rail5
+  namespace: openshift-sriov-network-operator
+spec:
+  bridge:
+    ovs: {}
+  deviceType: netdevice
+  eSwitchMode: switchdev
+  isRdma: true
+  linkType: ETH
+  mtu: 9216
+  nicSelector:
+    pfNames:
+      - eth_rail5
+  nodeSelector:
+    node-role.kubernetes.io/worker: ""
+  numVfs: 1
+  priority: 99
+  resourceName: eth_rail5

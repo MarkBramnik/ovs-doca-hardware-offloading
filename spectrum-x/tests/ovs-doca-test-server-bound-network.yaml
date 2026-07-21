@@ -1,0 +1,36 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ovs-doca-test-server
+  labels:
+    app: ovs-doca-test-server
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ovs-doca-test-server
+  template:
+    metadata:
+      labels:
+        app: ovs-doca-test-server
+      annotations:
+        # Replaces eth0 with a VF from rail 0 — must match the NAD name exactly
+        v1.multus-cni.io/default-network: default/rail0-ovn-hw-offload
+    spec:
+      nodeSelector:
+        node-role.kubernetes.io/test-server: ""
+      containers:
+      - name: python-server
+        image: quay.io/rh-ee-mbramnik/ecosys-nvidia/ovs-doca-test-app-server:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8000
+          name: http
+        env:
+        - name: PORT
+          value: "8000"
+        resources:
+          requests:
+            openshift.io/eth_rail0: "1"   # Must match the resourceName in the NAD
+          limits:
+            openshift.io/eth_rail0: "1"
