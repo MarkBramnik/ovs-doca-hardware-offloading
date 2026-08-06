@@ -5,4 +5,4 @@ metadata:
     machineconfiguration.openshift.io/role: worker
   name: 100-doca-ovs-image-layer
 spec:
-  osImageURL: quay.io/rh-ee-mbramnik/ecosys-nvidia/custom-coreos-image-doca-3-2-2-os-4-21-21@sha256:d4011d17b9df897f070f2032fa6a1770d259fb095bdfbb0e75f2d36a840b7848
+  osImageURL: quay.io/rh-ee-mbramnik/ecosys-nvidia/custom-coreos-image-doca-3-2-2-os-4-21-24@sha256:cc315aca8de69c2f1f33f0bb3cfb793c4f550e9c975c4234be556ea5c8afa82e

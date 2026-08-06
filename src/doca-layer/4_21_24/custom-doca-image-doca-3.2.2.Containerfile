@@ -1,4 +1,4 @@
-FROM quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:1db750ec3985ae348407fcbaa137b58100fccb43647032abe63cc0df2c719a88
+FROM quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:c15698e0c9344bad0dfdd02e299dec4ac2f41fc37c4d57a95c2a3b457236f04d
 
 # Add doca repository
 RUN <<EOF cat > /etc/yum.repos.d/doca.repo
@@ -21,6 +21,7 @@ RUN rpm-ostree override replace libibverbs rdma-core --experimental --from repo=
 
 RUN dnf -y remove openvswitch3.5 && \
     dnf -y install doca-openvswitch && \
+    dnf -y install mft && \
     rm -rf /etc/yum.repos.d/doca.repo
 RUN mkdir -p /etc/modprobe.d/ && echo "blacklist irdma" > /etc/modprobe.d/blacklist-irdma.conf && echo "blacklist ice" > /etc/modprobe.d/blacklist-ice.conf
 
