@@ -25,15 +25,6 @@ RUN dnf -y remove openvswitch3.5 && \
     rm -rf /etc/yum.repos.d/doca.repo
 RUN mkdir -p /etc/modprobe.d/ && echo "blacklist irdma" > /etc/modprobe.d/blacklist-irdma.conf && echo "blacklist ice" > /etc/modprobe.d/blacklist-ice.conf
 
-# This service is required for restarting the ovs after it's configured
-# Otherwise there are numerous bugs related to the order of startup in both systemd and daemon mode of sriov network operator
-# These bugs were observed on spectrum-x, despite the fact that in general the operator should be able to set the initilization of ovs by itself
-# In addition to that, there are more parameters to be set on ovs required by nVidia
-COPY doca-init.sh /usr/bin/doca-init.sh
-COPY doca-init.service /etc/systemd/system/doca-init.service
-
-RUN chmod +x /usr/bin/doca-init.sh && \
-    systemctl enable doca-init.service
 
 RUN ostree container commit
 
