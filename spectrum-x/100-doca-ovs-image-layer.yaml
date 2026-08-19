@@ -1,8 +1,0 @@
-apiVersion: machineconfiguration.openshift.io/v1
-kind: MachineConfig
-metadata:
-  labels:
-    machineconfiguration.openshift.io/role: worker
-  name: 100-doca-ovs-image-layer
-spec:
-  osImageURL: quay.io/rh-ee-mbramnik/ecosys-nvidia/custom-coreos-image-doca-3-2-2-os-4-21-24@sha256:cc315aca8de69c2f1f33f0bb3cfb793c4f550e9c975c4234be556ea5c8afa82e
