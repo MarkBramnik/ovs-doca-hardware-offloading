@@ -7,6 +7,7 @@ into the Ignition config, alongside the osImageURL for the layered RHCOS image.
 
 Usage:
     python generate-machineconfig.py --image-url <digest-pinned-image-ref> [--output <path>]
+                                     [--skip-os-image-layer] [--skip-doca-init-service]
 """
 
 import argparse
@@ -24,20 +25,16 @@ def url_encode_file(path: Path) -> str:
     return "data:text/plain;charset=utf-8," + quote(content, safe="")
 
 
-def build_machineconfig(image_url: str, script_uri: str, service_contents: str) -> str:
-    # 12 spaces: contents: | is at 10, block scalar body must be deeper
-    indented_service = textwrap.indent(service_contents, "            ")
+def build_machineconfig(image_url: str | None, script_uri: str | None, service_contents: str | None) -> str:
+    spec_lines = []
 
-    return f"""\
-{GENERATED_HEADER}
-apiVersion: machineconfiguration.openshift.io/v1
-kind: MachineConfig
-metadata:
-  labels:
-    machineconfiguration.openshift.io/role: worker
-  name: 100-doca-ovs-image-layer
-spec:
-  osImageURL: {image_url}
+    if image_url is not None:
+        spec_lines.append(f"  osImageURL: {image_url}")
+
+    if script_uri is not None and service_contents is not None:
+        # 12 spaces: contents: | is at 10, block scalar body must be deeper
+        indented_service = textwrap.indent(service_contents, "            ")
+        spec_lines.append(f"""\
   config:
     ignition:
       version: 3.2.0
@@ -52,11 +49,27 @@ spec:
         - name: doca-init.service
           enabled: true
           contents: |
-{indented_service}
+{indented_service}""")
+
+    spec_block = "\n".join(spec_lines)
+    if spec_block:
+        spec_block = "spec:\n" + spec_block
+    else:
+        spec_block = "spec: {}"
+
+    return f"""\
+{GENERATED_HEADER}
+apiVersion: machineconfiguration.openshift.io/v1
+kind: MachineConfig
+metadata:
+  labels:
+    machineconfiguration.openshift.io/role: worker
+  name: 100-doca-ovs-image-layer
+{spec_block}
 """
 
 # The script is generating the machine-config for installing the layered RCHOS version with OVS-Doca
-# 
+#
 # In addition to that the MachineConfig installs the ovs-doca initialization service
 # This service is required for restarting the ovs after it's configured
 # Otherwise there are numerous bugs related to the order of startup in both systemd and daemon mode of sriov network operator
@@ -65,22 +78,34 @@ spec:
 # doca-init.sh and doca-init.service are deployed via MachineConfig (see generate-machineconfig.py), not baked into the image.
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("--image-url", required=True, help="Digest-pinned osImageURL for the layered RHCOS image")
+    parser.add_argument("--image-url", help="Digest-pinned osImageURL for the layered RHCOS image")
     parser.add_argument("--output", help="Write output to this file instead of stdout")
+    parser.add_argument("--skip-os-image-layer", action="store_true",
+                        help="Omit the osImageURL field from the MachineConfig")
+    parser.add_argument("--skip-doca-init-service", action="store_true",
+                        help="Omit the doca-init service and script from the MachineConfig")
     args = parser.parse_args()
 
-    script_path = SCRIPT_DIR / "doca-init.sh"
-    service_path = SCRIPT_DIR / "doca-init.service"
+    if not args.skip_os_image_layer and not args.image_url:
+        parser.error("--image-url is required unless --skip-os-image-layer is specified")
 
-    for path in (script_path, service_path):
-        if not path.exists():
-            print(f"error: {path} not found", file=sys.stderr)
-            sys.exit(1)
+    image_url = None if args.skip_os_image_layer else args.image_url
+    script_uri = None
+    service_contents = None
 
-    script_uri = url_encode_file(script_path)
-    service_contents = service_path.read_text()
+    if not args.skip_doca_init_service:
+        script_path = SCRIPT_DIR / "doca-init.sh"
+        service_path = SCRIPT_DIR / "doca-init.service"
 
-    yaml_output = build_machineconfig(args.image_url, script_uri, service_contents)
+        for path in (script_path, service_path):
+            if not path.exists():
+                print(f"error: {path} not found", file=sys.stderr)
+                sys.exit(1)
+
+        script_uri = url_encode_file(script_path)
+        service_contents = service_path.read_text()
+
+    yaml_output = build_machineconfig(image_url, script_uri, service_contents)
 
     if args.output:
         Path(args.output).write_text(yaml_output)
